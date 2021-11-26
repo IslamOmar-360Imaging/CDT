@@ -517,24 +517,32 @@ struct hash<CDT::V2d<T> >
 namespace CDT
 {
 
+namespace detail
+{
+
 #ifdef CDT_CXX11_IS_SUPPORTED
+
+static mt19937 randGenerator(9001);
 inline void shuffle_indices(std::vector<VertInd>& indices)
 {
-    static mt19937 g(9001);
-    std::shuffle(indices.begin(), indices.end(), g);
+    std::shuffle(indices.begin(), indices.end(), randGenerator);
 }
+
 #else
+
 inline size_t randomCDT(const size_t i)
 {
-    static mt19937 g(9001);
-    return g() % i;
+    return randGenerator() % i;
 }
 
 inline void shuffle_indices(std::vector<VertInd>& indices)
 {
     std::random_shuffle(indices.begin(), indices.end(), randomCDT);
 }
+
 #endif
+
+} // namespace detail
 
 //-----------------------
 // Triangulation methods
@@ -550,6 +558,7 @@ void Triangulation<T, TNearPointLocator>::insertVertices(
     TGetVertexCoordX getX,
     TGetVertexCoordY getY)
 {
+    detail::randGenerator.seed(9001); // ensure deterministic behavior
     if(vertices.empty())
     {
         addSuperTriangle(envelopBox<T>(first, last, getX, getY));
@@ -573,7 +582,7 @@ void Triangulation<T, TNearPointLocator>::insertVertices(
         VertInd value = nExistingVerts;
         for(Iter it = ii.begin(); it != ii.end(); ++it, ++value)
             *it = value;
-        shuffle_indices(ii);
+        detail::shuffle_indices(ii);
         for(Iter it = ii.begin(); it != ii.end(); ++it)
             insertVertex(*it);
         break;
